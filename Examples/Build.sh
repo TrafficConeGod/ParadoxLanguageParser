@@ -1,5 +1,5 @@
-g++ -Wall -std=c++17 -I ../Source -c CountryExample.cpp
-for file in ./*.o
+for file in ./*.cpp
 do
-    g++ "$file" ../ParadoxLanguageParser.o -o $(basename "$file" .o).elf
+    g++ -Wall -std=c++17 -I ../Source -c "$file"
+    g++ $(basename "$file" .cpp).o ../ParadoxLanguageParser.o -o $(basename "$file" .cpp).elf
 done
