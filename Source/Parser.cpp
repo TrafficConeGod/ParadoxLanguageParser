@@ -146,9 +146,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                     case Token::Type::Assignment: {
                         stage = Stage::None;
                         it = compoundFirstTokenIterator;
-                        std::cout << it->Literal() << "\n";
                         AllAt(std::string(key)).push_back(Object(tokens, it));
-                        std::cout << it->Literal() << "\n";
                     } break;
                     default: {
                         stage = Stage::Invalid;
@@ -190,4 +188,27 @@ std::any& Object::At(std::string key) {
 
 const std::any& Object::At(std::string key) const {
     return (*data).map.at(key).at(0);
+}
+
+std::string Object::Code() const {
+    return GenerateCode("");
+}
+
+std::string Object::GenerateCode(std::string_view frontAppend) const {
+    std::stringstream stream;
+    for (auto& key : Keys()) {
+        for (auto& value : AllAt(key)) {
+            stream << frontAppend << key << " = ";
+            auto& type = value.type();
+            if (type == typeid(std::string)) {
+                stream << std::any_cast<std::string>(value);
+            } else if (type == typeid(Object)) {
+                stream << "{\n" << std::any_cast<Object>(value).GenerateCode(std::string(frontAppend.size() + 1, '\t')) << "}";
+            } else {
+                stream << "UNDEFINED";
+            }
+            stream << "\n";
+        }
+    }
+    return stream.str();
 }

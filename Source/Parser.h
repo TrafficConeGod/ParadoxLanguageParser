@@ -19,6 +19,8 @@ namespace ParadoxLanguage {
             void Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
 
             Object(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
+
+            std::string GenerateCode(std::string_view frontAppend) const;
         public:
             Object();
             Object(std::string code);
@@ -32,6 +34,8 @@ namespace ParadoxLanguage {
             std::any& At(std::string key);
 
             const std::any& At(std::string key) const;
+
+            std::string Code() const;
     };
 
     class Array {
