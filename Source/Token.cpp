@@ -14,7 +14,7 @@ Token::Token(std::string_view vLiteral) : literal{std::string(vLiteral)} {
             type = Type::CloseBracket;
         } break;
         default: {
-            type = Type::StringLiteral;
+            type = Type::Literal;
         } break;
     }
 }

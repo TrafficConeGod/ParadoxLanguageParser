@@ -4,41 +4,41 @@
 #include <vector>
 #include <any>
 #include <memory>
+#include "Token.h"
 
 namespace ParadoxLanguage {
 
     class Object {
         private:
             struct ObjectData {
-                std::map<std::string, std::vector<std::any>> dataMap;
+                std::map<std::string, std::vector<std::any>> map;
             };
 
-            std::shared_ptr<ObjectData> reference;
+            std::shared_ptr<ObjectData> data;
+
+            void Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
+
+            Object(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
         public:
             Object(std::string code);
 
-            std::vector<std::string_view> Keys() const;
+            std::vector<std::string> Keys() const;
 
-            std::vector<std::any> AllAt(std::string_view key);
+            std::vector<std::any>& AllAt(std::string key);
 
-            std::vector<const std::any> AllAt(std::string_view key) const;
+            const std::vector<std::any>& AllAt(std::string key) const;
 
-            std::any At(std::string_view key);
+            std::any& At(std::string key);
 
-            const std::any At(std::string_view key) const;
-
-            template<typename T>
-            void SetAt(std::string_view key, std::vector<T> value);
+            const std::any& At(std::string key) const;
     };
 
     class Array {
         private:
         public:
-            std::vector<std::any> Values();
+            std::vector<std::any>& Values();
             
-            std::vector<const std::any> Values() const;
-
-            void SetValues(std::vector<std::any> values);
+            const std::vector<std::any>& Values() const;
     };
 
 }

@@ -6,7 +6,7 @@ namespace ParadoxLanguage {
         public:
             enum class Type {
                 Invalid,
-                StringLiteral,
+                Literal,
                 Assignment,
                 OpenBracket,
                 CloseBracket
