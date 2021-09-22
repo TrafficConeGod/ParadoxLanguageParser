@@ -20,6 +20,7 @@ namespace ParadoxLanguage {
 
             Object(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
         public:
+            Object();
             Object(std::string code);
 
             std::vector<std::string> Keys() const;
@@ -34,8 +35,10 @@ namespace ParadoxLanguage {
     };
 
     class Array {
-        private:
         public:
+            Array();
+            Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
+
             std::vector<std::any>& Values();
             
             const std::vector<std::any>& Values() const;

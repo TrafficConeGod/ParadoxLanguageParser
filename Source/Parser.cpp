@@ -74,19 +74,22 @@ Object::Object(const std::vector<Token>& tokens, std::vector<Token>::const_itera
     Parse(tokens, begin);
 }
 
-void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin) {
+void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
     data = std::shared_ptr<ObjectData>(new ObjectData());
     
     enum class Stage {
+        Invalid,
         None,
         Identifier,
         Assignment,
         Value,
-        Compound
+        Compound,
+        CompoundLiteral
     };
     std::string_view key;
+    auto compoundFirstTokenIterator = it;
     Stage stage = Stage::None;
-    for (auto it = begin; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
+    for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
         switch (stage) {
             case Stage::None: {
                 if (it->TokenType() == Token::Type::Literal) {
@@ -106,14 +109,58 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         stage = Stage::None;
                         AllAt(std::string(key)).push_back(std::string(it->Literal()));
                     } break;
+                    case Token::Type::OpenBracket: {
+                        stage = Stage::Compound;
+                    } break;
                     default: {
-
+                        stage = Stage::Invalid;
+                    } break;
+                }
+            } break;
+            case Stage::Compound: {
+                auto type = it->TokenType();
+                switch (type) {
+                    case Token::Type::Literal: {
+                        stage = Stage::CompoundLiteral;
+                        compoundFirstTokenIterator = it;
+                    } break;
+                    case Token::Type::CloseBracket: {
+                        stage = Stage::None;
+                        // AllAt(std::string(key)).push_back(Object());
+                    } break;
+                    default: {
+                        stage = Stage::Invalid;
+                    } break;
+                }
+            } break;
+            case Stage::CompoundLiteral: {
+                auto type = it->TokenType();
+                switch (type) {
+                    case Token::Type::CloseBracket:
+                    case Token::Type::Literal: {
+                        stage = Stage::None;
+                        // std::cout << it->Literal() << "\n";
+                        // AllAt(std::string(key)).push_back(Array(tokens, it));
+                        // std::cout << it->Literal() << "\n";
+                    } break;
+                    case Token::Type::Assignment: {
+                        stage = Stage::None;
+                        it = compoundFirstTokenIterator;
+                        std::cout << it->Literal() << "\n";
+                        AllAt(std::string(key)).push_back(Object(tokens, it));
+                        std::cout << it->Literal() << "\n";
+                    } break;
+                    default: {
+                        stage = Stage::Invalid;
                     } break;
                 }
             } break;
             default: {
-
+                stage = Stage::Invalid;
             } break;
+        }
+        if (stage == Stage::Invalid) {
+            std::cout << "Unexpected token: " << it->Literal() << "\n";
         }
     }
 }
