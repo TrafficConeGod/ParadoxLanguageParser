@@ -99,8 +99,6 @@ Object::Object(const std::vector<Token>& tokens, std::vector<Token>::const_itera
 }
 
 void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
-    data = std::shared_ptr<Data>(new Data());
-    
     enum class Stage {
         Invalid,
         None,
@@ -188,29 +186,29 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
 
 std::vector<std::string> Object::Keys() const {
     std::vector<std::string> keys;
-    for (auto it = (*data).map.begin(); it != (*data).map.end(); it++) {
+    for (auto it = map.begin(); it != map.end(); it++) {
         keys.push_back(it->first);
     }
     return keys;
 }
 
 std::vector<std::any>& Object::AllAt(std::string key) {
-    if (!(*data).map.count(key)) {
-        (*data).map[key] = std::vector<std::any>();
+    if (!map.count(key)) {
+        map[key] = std::vector<std::any>();
     }
-    return (*data).map[key];
+    return map[key];
 }
 
 const std::vector<std::any>& Object::AllAt(std::string key) const {
-    return (*data).map.at(key);
+    return map.at(key);
 }
 
 std::any& Object::At(std::string key) {
-    return (*data).map.at(key).at(0);
+    return map.at(key).at(0);
 }
 
 const std::any& Object::At(std::string key) const {
-    return (*data).map.at(key).at(0);
+    return map.at(key).at(0);
 }
 
 std::string Object::Code() const {
@@ -239,8 +237,6 @@ std::string Object::GenerateCode(std::string_view frontAppend) const {
 }
 
 Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
-    data = std::shared_ptr<Data>(new Data());
-
     for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
         switch (it->TokenType()) {
             case Token::Type::Literal: {
@@ -257,11 +253,11 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
 }
 
 std::vector<std::any>& Array::Values() {
-    return (*data).array;
+    return vector;
 }
             
 const std::vector<std::any>& Array::Values() const {
-    return (*data).array;
+    return vector;
 }
             
 std::string Array::Code() const {
