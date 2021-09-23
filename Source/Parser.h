@@ -8,6 +8,8 @@
 
 namespace ParadoxLanguage {
 
+    std::string StringToStringLiteral(std::string string);
+
     class Object {
         private:
             struct Data {

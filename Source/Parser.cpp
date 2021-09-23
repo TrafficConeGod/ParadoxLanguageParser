@@ -1,8 +1,30 @@
 #include "Parser.h"
 #include <sstream>
 #include <iostream>
+// #include <regex>
 
 using namespace ParadoxLanguage;
+
+std::string ParadoxLanguage::StringToStringLiteral(std::string string) {
+    // std::regex spaceRegex("(\\s+)");
+    bool hasSpace = false;
+    for (auto ch : string) {
+        if (ch == ' ') {
+            hasSpace = true;
+            break;
+        }
+    }
+    // if (std::regex_match(string, spaceRegex)) {
+    if (hasSpace) {
+        std::stringstream stream;
+        stream << "\"";
+        stream << string;
+        stream << "\"";
+        return stream.str();
+    } else {
+        return string;
+    }
+}
 
 Object::Object(std::string code) {
     // split into tokens
@@ -139,9 +161,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                     case Token::Type::CloseBracket:
                     case Token::Type::Literal: {
                         stage = Stage::None;
-                        std::cout << it->Literal() << "\n";
                         AllAt(std::string(key)).push_back(Array(tokens, it));
-                        std::cout << it->Literal() << "\n";
                     } break;
                     case Token::Type::Assignment: {
                         stage = Stage::None;
@@ -201,7 +221,7 @@ std::string Object::GenerateCode(std::string_view frontAppend) const {
             stream << frontAppend << key << " = ";
             auto& type = value.type();
             if (type == typeid(std::string)) {
-                stream << std::any_cast<std::string>(value);
+                stream << StringToStringLiteral(std::any_cast<std::string>(value));
             } else if (type == typeid(Object)) {
                 stream << "{\n" << std::any_cast<Object>(value).GenerateCode(std::string(frontAppend.size() + 1, '\t')) << "}";
             } else if (type == typeid(Array)) {
@@ -244,7 +264,7 @@ const std::vector<std::any>& Array::Values() const {
 std::string Array::Code() const {
     std::stringstream stream;
     for (auto& value : Values()) {
-        stream << std::any_cast<std::string>(value) << " ";
+        stream << StringToStringLiteral(std::any_cast<std::string>(value)) << " ";
     }
     return stream.str();
 }
