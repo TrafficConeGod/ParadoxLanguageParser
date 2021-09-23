@@ -161,6 +161,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                     case Token::Type::CloseBracket:
                     case Token::Type::Literal: {
                         stage = Stage::None;
+                        it = compoundFirstTokenIterator;
                         AllAt(std::string(key)).push_back(Array(tokens, it));
                     } break;
                     case Token::Type::Assignment: {
