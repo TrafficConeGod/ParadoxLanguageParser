@@ -9,9 +9,8 @@ class Country {
     public:
         Country(std::string_view code) : object{std::string(code)} {}
 
-        std::string GraphicalCulture() const {
-            auto graphicalCulture = std::any_cast<std::string>(object.At("graphical_culture"));
-            return graphicalCulture;
+        std::string& GraphicalCulture() {
+            return std::any_cast<std::string&>(object.At("graphical_culture"));
         }
 };
 
@@ -21,6 +20,9 @@ int main() {
     Country country(stream.str());
 
     std::cout << country.GraphicalCulture() << "\n";
+    country.GraphicalCulture() = "FrenchGC";
+    std::cout << country.GraphicalCulture() << "\n";
+    
 
     return 0;
 }
