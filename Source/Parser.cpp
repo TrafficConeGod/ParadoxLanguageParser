@@ -37,9 +37,8 @@ Object::Object(std::string code) {
     for (char ch : code) {
         if (wasKeyCharacter) {
             wasKeyCharacter = false;
-            std::string literal = stream.str();
             tokens.push_back(Token(stream.str()));
-            stream.str("");
+            stream.str(std::string());
         }
         
         if (isInQuote) {
@@ -48,7 +47,7 @@ Object::Object(std::string code) {
                 std::string literal = stream.str();
                 if (literal.size() > 0) {
                     tokens.push_back(Token(stream.str()));
-                    stream.str("");
+                    stream.str(std::string());
                 }
             } else {
                 stream << ch;
@@ -59,15 +58,15 @@ Object::Object(std::string code) {
                 case '{':
                 case '}':
                 case '\n':
+                case 0xD:
                 case ' ':
                 case '\t': {
                     if (!isInQuote) {
                         std::string literal = stream.str();
                         if (literal.size() > 0) {
                             tokens.push_back(Token(stream.str()));
-                            stream.str("");
+                            stream.str(std::string());
                         }
-                        break;
                     }
                 } break;
                 case '"': {
@@ -83,6 +82,9 @@ Object::Object(std::string code) {
                 case '}': {
                     wasKeyCharacter = true;
                     stream << ch;
+                } break;
+                default: {
+
                 } break;
             }
         }
