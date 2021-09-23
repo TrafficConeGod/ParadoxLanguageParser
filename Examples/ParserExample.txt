@@ -2,6 +2,7 @@ test =Hello1
 other_test = 10
 test_3= "Hello world!"
 test=Hello2
+array = { 10 20 "Hello!" test }
 testing = {
     Hello1 = H2a
     Hello2 = Hi

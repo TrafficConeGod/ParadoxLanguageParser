@@ -75,7 +75,7 @@ Object::Object(const std::vector<Token>& tokens, std::vector<Token>::const_itera
 }
 
 void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
-    data = std::shared_ptr<ObjectData>(new ObjectData());
+    data = std::shared_ptr<Data>(new Data());
     
     enum class Stage {
         Invalid,
@@ -139,9 +139,9 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                     case Token::Type::CloseBracket:
                     case Token::Type::Literal: {
                         stage = Stage::None;
-                        // std::cout << it->Literal() << "\n";
-                        // AllAt(std::string(key)).push_back(Array(tokens, it));
-                        // std::cout << it->Literal() << "\n";
+                        std::cout << it->Literal() << "\n";
+                        AllAt(std::string(key)).push_back(Array(tokens, it));
+                        std::cout << it->Literal() << "\n";
                     } break;
                     case Token::Type::Assignment: {
                         stage = Stage::None;
@@ -204,11 +204,47 @@ std::string Object::GenerateCode(std::string_view frontAppend) const {
                 stream << std::any_cast<std::string>(value);
             } else if (type == typeid(Object)) {
                 stream << "{\n" << std::any_cast<Object>(value).GenerateCode(std::string(frontAppend.size() + 1, '\t')) << "}";
+            } else if (type == typeid(Array)) {
+                stream << "{ " << std::any_cast<Array>(value).Code() << "}";
             } else {
                 stream << "UNDEFINED";
             }
             stream << "\n";
         }
+    }
+    return stream.str();
+}
+
+Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
+    data = std::shared_ptr<Data>(new Data());
+
+    for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
+        switch (it->TokenType()) {
+            case Token::Type::Literal: {
+                Values().push_back(std::string(it->Literal()));
+            } break;
+            case Token::Type::CloseBracket: {
+                return;
+            } break;
+            default: {
+                std::cout << "Invalid token in array: " << it->Literal() << "\n";
+            } break;
+        }
+    }
+}
+
+std::vector<std::any>& Array::Values() {
+    return (*data).array;
+}
+            
+const std::vector<std::any>& Array::Values() const {
+    return (*data).array;
+}
+            
+std::string Array::Code() const {
+    std::stringstream stream;
+    for (auto& value : Values()) {
+        stream << std::any_cast<std::string>(value) << " ";
     }
     return stream.str();
 }

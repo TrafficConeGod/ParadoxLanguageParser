@@ -10,11 +10,11 @@ namespace ParadoxLanguage {
 
     class Object {
         private:
-            struct ObjectData {
+            struct Data {
                 std::map<std::string, std::vector<std::any>> map;
             };
 
-            std::shared_ptr<ObjectData> data;
+            std::shared_ptr<Data> data;
 
             void Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
 
@@ -39,6 +39,12 @@ namespace ParadoxLanguage {
     };
 
     class Array {
+        private:
+            struct Data {
+                std::vector<std::any> array;
+            };
+
+            std::shared_ptr<Data> data;
         public:
             Array();
             Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
@@ -46,6 +52,8 @@ namespace ParadoxLanguage {
             std::vector<std::any>& Values();
             
             const std::vector<std::any>& Values() const;
+
+            std::string Code() const;
     };
 
 }
