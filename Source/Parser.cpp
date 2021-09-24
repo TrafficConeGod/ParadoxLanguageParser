@@ -153,7 +153,8 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         auto nextIterator = it;
                         nextIterator++;
                         if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
-                            AllAt(std::string(key)).push_back(Object());
+                            stage = Stage::None;
+                            AllAt(std::string(key)).push_back(Object(tokens, it));
                         }
                     } break;
                     default: {
@@ -171,6 +172,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         auto nextIterator = it;
                         nextIterator++;
                         if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
+                            stage = Stage::None;
                             AllAt(std::string(key)).push_back(Array(tokens, it));
                         }
                     } break;
