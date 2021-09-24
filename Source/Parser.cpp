@@ -155,11 +155,15 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                 if (it->TokenType() == Token::Type::Literal) {
                     stage = Stage::Identifier;
                     key = it->Literal();
+                } else {
+                    throw InvalidTokenException(it, "Expected literal");
                 }
             } break;
             case Stage::Identifier: {
                 if (it->TokenType() == Token::Type::Assignment) {
                     stage = Stage::Assignment;
+                } else {
+                    throw InvalidTokenException(it, "Expected \"=\"");
                 }
             } break;
             case Stage::Assignment: {
@@ -179,7 +183,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         }
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "object");
+                        throw InvalidTokenException(it, "Expected literal or \"{\" after \"=\"");
                     } break;
                 }
             } break;
@@ -198,7 +202,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         }
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "object");
+                        throw InvalidTokenException(it, "Expected literal or end after \"{\"");
                     } break;
                 }
             } break;
@@ -217,12 +221,12 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         AllAt(std::string(key)).push_back(Object(tokens, it));
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "object");
+                        throw InvalidTokenException(it, "Expected literal, end, or \"=\" after literal");
                     } break;
                 }
             } break;
             default: {
-                throw InvalidTokenException(it, "object");
+                throw InvalidTokenException(it, "Unknown object error");
             } break;
         }
     }
@@ -287,7 +291,7 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         stage = Stage::Compound;
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "array");
+                        throw InvalidTokenException(it, "Expected literal or \"{\"");
                     } break;
                 }
             } break;
@@ -306,7 +310,7 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         }
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "array");
+                        throw InvalidTokenException(it, "Expected literal after \"{\"");
                     } break;
                 }
             } break;
@@ -325,12 +329,12 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         Values().push_back(Object(tokens, it));
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "array");
+                        throw InvalidTokenException(it, "Expected literal, end, or \"=\" after literal");
                     } break;
                 }
             } break;
             default: {
-                throw InvalidTokenException(it, "array");
+                throw InvalidTokenException(it, "Unknown array error");
             } break;
         }
     }
