@@ -26,6 +26,8 @@ std::string ParadoxLanguage::StringToStringLiteral(std::string string) {
     }
 }
 
+Object::Object() {}
+
 Object::Object(std::string code) {
     // split into tokens
     std::vector<Token> tokens;
@@ -90,6 +92,10 @@ Object::Object(std::string code) {
         }
     }
 
+    // for (const auto& token : tokens) {
+    //     std::cout << token.Literal() << " " << (int)token.TokenType() << "\n";
+    // }
+
     std::vector<Token>::const_iterator it = tokens.begin();
     Parse(tokens, it);
 }
@@ -133,6 +139,11 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                     } break;
                     case Token::Type::OpenBracket: {
                         stage = Stage::Compound;
+                        auto nextIterator = it;
+                        nextIterator++;
+                        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
+                            AllAt(std::string(key)).push_back(Object());
+                        }
                     } break;
                     default: {
                         stage = Stage::Invalid;
@@ -145,10 +156,12 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                     case Token::Type::Literal: {
                         stage = Stage::CompoundLiteral;
                         compoundFirstTokenIterator = it;
-                    } break;
-                    case Token::Type::CloseBracket: {
-                        stage = Stage::None;
-                        // AllAt(std::string(key)).push_back(Object());
+
+                        auto nextIterator = it;
+                        nextIterator++;
+                        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
+                            AllAt(std::string(key)).push_back(Array(tokens, it));
+                        }
                     } break;
                     default: {
                         stage = Stage::Invalid;
@@ -222,11 +235,11 @@ std::string Object::GenerateCode(std::string_view frontAppend) const {
             stream << frontAppend << key << " = ";
             auto& type = value.type();
             if (type == typeid(std::string)) {
-                stream << StringToStringLiteral(std::any_cast<std::string>(value));
+                stream << StringToStringLiteral(std::any_cast<const std::string&>(value));
             } else if (type == typeid(Object)) {
-                stream << "{\n" << std::any_cast<Object>(value).GenerateCode(std::string(frontAppend.size() + 1, '\t')) << "}";
+                stream << "{\n" << std::any_cast<const Object&>(value).GenerateCode(std::string(frontAppend.size() + 1, '\t')) << frontAppend << "}";
             } else if (type == typeid(Array)) {
-                stream << "{ " << std::any_cast<Array>(value).Code() << "}";
+                stream << "{ " << std::any_cast<const Array&>(value).Code() << "}";
             } else {
                 stream << "UNDEFINED";
             }
@@ -263,7 +276,7 @@ const std::vector<std::any>& Array::Values() const {
 std::string Array::Code() const {
     std::stringstream stream;
     for (auto& value : Values()) {
-        stream << StringToStringLiteral(std::any_cast<std::string>(value)) << " ";
+        stream << StringToStringLiteral(std::any_cast<const std::string&>(value)) << " ";
     }
     return stream.str();
 }
