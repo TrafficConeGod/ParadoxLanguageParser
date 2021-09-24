@@ -34,60 +34,70 @@ Object::Object(std::string code) {
     std::stringstream stream;
 
     bool isInQuote = false;
+    bool isInComment = false;
     bool wasKeyCharacter = false;
     code += "\n";
     for (char ch : code) {
-        if (wasKeyCharacter) {
-            wasKeyCharacter = false;
-            tokens.push_back(Token(stream.str()));
-            stream.str(std::string());
+        if (ch == '#') {
+            isInComment = true;
         }
-        
-        if (isInQuote) {
-            if (ch == '"') {
-                isInQuote = false;
-                std::string literal = stream.str();
-                if (literal.size() > 0) {
-                    tokens.push_back(Token(stream.str()));
-                    stream.str(std::string());
-                }
-            } else {
-                stream << ch;
+        if (isInComment) {
+            if (ch == '\n') {
+                isInComment = false;
             }
         } else {
-            switch (ch) {
-                case '=':
-                case '{':
-                case '}':
-                case '\n':
-                case 0xD:
-                case ' ':
-                case '\t': {
-                    if (!isInQuote) {
-                        std::string literal = stream.str();
-                        if (literal.size() > 0) {
-                            tokens.push_back(Token(stream.str()));
-                            stream.str(std::string());
-                        }
-                    }
-                } break;
-                case '"': {
-                    isInQuote = true;
-                } break;
-                default: {
-                    stream << ch;
-                } break;
+            if (wasKeyCharacter) {
+                wasKeyCharacter = false;
+                tokens.push_back(Token(stream.str()));
+                stream.str(std::string());
             }
-            switch (ch) {
-                case '=':
-                case '{':
-                case '}': {
-                    wasKeyCharacter = true;
+            
+            if (isInQuote) {
+                if (ch == '"') {
+                    isInQuote = false;
+                    std::string literal = stream.str();
+                    if (literal.size() > 0) {
+                        tokens.push_back(Token(stream.str()));
+                        stream.str(std::string());
+                    }
+                } else {
                     stream << ch;
-                } break;
-                default: {
+                }
+            } else {
+                switch (ch) {
+                    case '=':
+                    case '{':
+                    case '}':
+                    case '\n':
+                    case 0xD:
+                    case ' ':
+                    case '\t': {
+                        if (!isInQuote) {
+                            std::string literal = stream.str();
+                            if (literal.size() > 0) {
+                                tokens.push_back(Token(stream.str()));
+                                stream.str(std::string());
+                            }
+                        }
+                    } break;
+                    case '"': {
+                        isInQuote = true;
+                    } break;
+                    default: {
+                        stream << ch;
+                    } break;
+                }
+                switch (ch) {
+                    case '=':
+                    case '{':
+                    case '}': {
+                        wasKeyCharacter = true;
+                        stream << ch;
+                    } break;
+                    default: {
 
-                } break;
+                    } break;
+                }
             }
         }
     }
@@ -95,6 +105,7 @@ Object::Object(std::string code) {
     // for (const auto& token : tokens) {
     //     std::cout << token.Literal() << " " << (int)token.TokenType() << "\n";
     // }
+    // std::cout << tokens.size() << "\n";
 
     std::vector<Token>::const_iterator it = tokens.begin();
     Parse(tokens, it);
