@@ -48,11 +48,18 @@ Object::Object(std::string code) {
     std::vector<Token> tokens;
     std::stringstream stream;
 
+    Token::Position tokenPosition;
     bool isInQuote = false;
     bool isInComment = false;
     bool wasKeyCharacter = false;
     code += "\n";
     for (char ch : code) {
+        if (ch == '\n') {
+            tokenPosition.column = 0;
+            tokenPosition.row++;
+        } else {
+            tokenPosition.column++;
+        }
         if (ch == '#') {
             isInComment = true;
         }
@@ -63,7 +70,7 @@ Object::Object(std::string code) {
         } else {
             if (wasKeyCharacter) {
                 wasKeyCharacter = false;
-                tokens.push_back(Token(stream.str()));
+                tokens.push_back(Token(stream.str(), tokenPosition));
                 stream.str(std::string());
             }
             
@@ -72,7 +79,7 @@ Object::Object(std::string code) {
                     isInQuote = false;
                     std::string literal = stream.str();
                     if (literal.size() > 0) {
-                        tokens.push_back(Token(stream.str()));
+                        tokens.push_back(Token(stream.str(), tokenPosition));
                         stream.str(std::string());
                     }
                 } else {
@@ -90,7 +97,7 @@ Object::Object(std::string code) {
                         if (!isInQuote) {
                             std::string literal = stream.str();
                             if (literal.size() > 0) {
-                                tokens.push_back(Token(stream.str()));
+                                tokens.push_back(Token(stream.str(), tokenPosition));
                                 stream.str(std::string());
                             }
                         }
@@ -346,16 +353,14 @@ std::string Array::Code(std::string_view frontAppend) const {
     return stream.str();
 }
 
-InvalidTokenException::InvalidTokenException(const Token& token, std::string_view area, std::string_view reason) {
+std::string InvalidTokenException::Message(std::string literal, const Token::Position& position, std::string_view reason) {
     std::stringstream stream;
-    stream << "Invalid token \"" << token.Literal() << "\" in " << area << " for " << reason << "\n";
-    message = stream.str();
+    stream << "Invalid token \"" << literal << "\" at row: " << position.row << ", column: " << position.column << "\nReason: " << reason << "\n";
+    return stream.str();
 }
-InvalidTokenException::InvalidTokenException(std::vector<Token>::const_iterator iterator, std::string_view area, std::string_view reason) {
-    std::stringstream stream;
-    stream << "Invalid token \"" << iterator->Literal() << "\" in " << area << " for " << reason << "\n";
-    message = stream.str();
-}
+
+
+InvalidTokenException::InvalidTokenException(std::vector<Token>::const_iterator iterator, std::string_view reason) : message{Message(std::string(iterator->Literal()), iterator->TokenPosition(), reason)} {}
 InvalidTokenException::~InvalidTokenException() throw() {}
 
 const char* InvalidTokenException::what() const throw() {

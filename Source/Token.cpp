@@ -2,7 +2,7 @@
 
 using namespace ParadoxLanguage;
 
-Token::Token(std::string_view vLiteral) : literal{std::string(vLiteral)} {
+Token::Token(std::string_view vLiteral, Position vPosition) : literal{std::string(vLiteral)}, position{vPosition} {
     switch (vLiteral.at(0)) {
         case '=': {
             type = Type::Assignment;
@@ -21,6 +21,10 @@ Token::Token(std::string_view vLiteral) : literal{std::string(vLiteral)} {
 
 Token::Type Token::TokenType() const {
     return type;
+}
+
+const Token::Position& Token::TokenPosition() const {
+    return position;
 }
 
 std::string_view Token::Literal() const {
