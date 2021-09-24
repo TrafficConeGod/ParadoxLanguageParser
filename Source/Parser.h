@@ -10,16 +10,16 @@ namespace ParadoxLanguage {
 
     std::string StringToStringLiteral(std::string string);
 
+    std::string ValueToString(const std::any& value, std::string_view frontAppend);
+
     class Object {
         private:
             std::map<std::string, std::vector<std::any>> map;
 
             void Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
-            std::string GenerateCode(std::string_view frontAppend) const;
-
-            Object(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
         public:
             Object();
+            Object(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
             Object(std::string code);
 
             std::vector<std::string> Keys() const;
@@ -30,7 +30,7 @@ namespace ParadoxLanguage {
             std::any& At(std::string key);
             const std::any& At(std::string key) const;
 
-            std::string Code() const;
+            std::string Code(std::string_view frontAppend = "") const;
     };
 
     class Array {
@@ -43,7 +43,7 @@ namespace ParadoxLanguage {
             std::vector<std::any>& Values();
             const std::vector<std::any>& Values() const;
 
-            std::string Code() const;
+            std::string Code(std::string_view frontAppend = "") const;
     };
 
 }
