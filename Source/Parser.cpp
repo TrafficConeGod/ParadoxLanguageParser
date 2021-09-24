@@ -298,6 +298,7 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
             case Stage::Compound: {
                 auto type = it->TokenType();
                 switch (type) {
+                    case Token::Type::OpenBracket:
                     case Token::Type::Literal: {
                         stage = Stage::CompoundLiteral;
                         compoundFirstTokenIterator = it;
@@ -310,7 +311,7 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         }
                     } break;
                     default: {
-                        throw InvalidTokenException(it, "Expected literal after \"{\"");
+                        throw InvalidTokenException(it, "Expected literal or \"{\" after \"{\"");
                     } break;
                 }
             } break;
