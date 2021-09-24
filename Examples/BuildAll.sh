@@ -1,4 +1,4 @@
 cd ..
-./Build.sh
+./Build.sh $1
 cd Examples
-./Build.sh
+./Build.sh $1

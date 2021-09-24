@@ -1,1 +1,1 @@
-g++ -Wall -std=c++17 -c $(find Source -name '*.cpp')
+g++ -Wall -std=c++17 -c $(find Source -name '*.cpp') $1

@@ -132,7 +132,6 @@ Object::Object(const std::vector<Token>& tokens, std::vector<Token>::const_itera
 
 void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
     enum class Stage {
-        Invalid,
         None,
         Identifier,
         Assignment,
@@ -173,7 +172,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         }
                     } break;
                     default: {
-                        stage = Stage::Invalid;
+                        throw InvalidTokenException(it, "object");
                     } break;
                 }
             } break;
@@ -192,7 +191,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         }
                     } break;
                     default: {
-                        stage = Stage::Invalid;
+                        throw InvalidTokenException(it, "object");
                     } break;
                 }
             } break;
@@ -211,16 +210,13 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                         AllAt(std::string(key)).push_back(Object(tokens, it));
                     } break;
                     default: {
-                        stage = Stage::Invalid;
+                        throw InvalidTokenException(it, "object");
                     } break;
                 }
             } break;
             default: {
-                stage = Stage::Invalid;
+                throw InvalidTokenException(it, "object");
             } break;
-        }
-        if (stage == Stage::Invalid) {
-            std::cout << "Unexpected token: " << it->Literal() << "\n";
         }
     }
 }
@@ -266,7 +262,6 @@ std::string Object::Code(std::string_view frontAppend) const {
 
 Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
     enum class Stage {
-        Invalid,
         None,
         Compound,
         CompoundLiteral
@@ -285,7 +280,7 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         stage = Stage::Compound;
                     } break;
                     default: {
-                        stage = Stage::Invalid;
+                        throw InvalidTokenException(it, "array");
                     } break;
                 }
             } break;
@@ -304,7 +299,7 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         }
                     } break;
                     default: {
-                        stage = Stage::Invalid;
+                        throw InvalidTokenException(it, "array");
                     } break;
                 }
             } break;
@@ -323,16 +318,13 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
                         Values().push_back(Object(tokens, it));
                     } break;
                     default: {
-                        stage = Stage::Invalid;
+                        throw InvalidTokenException(it, "array");
                     } break;
                 }
             } break;
             default: {
-                stage = Stage::Invalid;
+                throw InvalidTokenException(it, "array");
             } break;
-        }
-        if (stage == Stage::Invalid) {
-            std::cout << "Invalid token in array: " << it->Literal() << "\n";
         }
     }
 }
@@ -352,4 +344,20 @@ std::string Array::Code(std::string_view frontAppend) const {
         stream << " ";
     }
     return stream.str();
+}
+
+InvalidTokenException::InvalidTokenException(const Token& token, std::string_view area, std::string_view reason) {
+    std::stringstream stream;
+    stream << "Invalid token \"" << token.Literal() << "\" in " << area << " for " << reason << "\n";
+    message = stream.str();
+}
+InvalidTokenException::InvalidTokenException(std::vector<Token>::const_iterator iterator, std::string_view area, std::string_view reason) {
+    std::stringstream stream;
+    stream << "Invalid token \"" << iterator->Literal() << "\" in " << area << " for " << reason << "\n";
+    message = stream.str();
+}
+InvalidTokenException::~InvalidTokenException() throw() {}
+
+const char* InvalidTokenException::what() const throw() {
+    return message.c_str();
 }

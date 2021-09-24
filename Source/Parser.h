@@ -4,6 +4,7 @@
 #include <vector>
 #include <any>
 #include <memory>
+#include <exception>
 #include "Token.h"
 
 namespace ParadoxLanguage {
@@ -44,6 +45,17 @@ namespace ParadoxLanguage {
             const std::vector<std::any>& Values() const;
 
             std::string Code(std::string_view frontAppend = "") const;
+    };
+
+    class InvalidTokenException : public std::exception {
+        private:
+            std::string message;
+        public:
+            explicit InvalidTokenException(const Token& token, std::string_view area, std::string_view reason = "no reason");
+            explicit InvalidTokenException(std::vector<Token>::const_iterator iterator, std::string_view area, std::string_view reason = "no reason");
+            virtual ~InvalidTokenException() throw();
+
+            const char* what() const throw();
     };
 
 }

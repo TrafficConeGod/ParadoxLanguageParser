@@ -3,7 +3,7 @@ other_test = 10
 test_3= "Hello world!"
 test=Hello2 # this is also a comment
 array = { 10 20 "Hello!" test }
-array = { 10 20 "Hello!" test { object_within_array = yes } { array_within_array } }
+array = { 10 20 "Hello!" test { object_within_array = yes } { { array_within_array_within_array } } }
 testing = {
     Hello1 = H2a
     Hello2 = Hi
