@@ -3,9 +3,7 @@
 #include <iostream>
 // #include <regex>
 
-using namespace ParadoxLanguage;
-
-std::string ParadoxLanguage::StringToStringLiteral(std::string string) {
+std::string ParadoxLanguage::StringToCode(std::string string) {
     // std::regex spaceRegex("(\\s+)");
     bool hasSpace = false;
     for (auto ch : string) {
@@ -26,15 +24,87 @@ std::string ParadoxLanguage::StringToStringLiteral(std::string string) {
     }
 }
 
-std::string ParadoxLanguage::ValueToString(const std::any& value, std::string_view frontAppend) {
+using namespace ParadoxLanguage;
+
+std::variant<std::string, Object, Array> Value::Variant(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
+    enum class Stage {
+        None,
+        Compound,
+        CompoundLiteral
+    };
+    Stage stage = Stage::None;
+    auto compoundFirstTokenIterator = it;
+
+    // std::cout << it->String() << "\n";
+    
+    for (; it != tokens.end(); it++) {
+        auto type = it->TokenType();
+        switch (stage) {
+            case Stage::None: {
+                switch (type) {
+                    case Token::Type::Literal: {
+                        return std::string(std::string(it->Literal()));
+                    } break;
+                    case Token::Type::OpenBracket: {
+                        stage = Stage::Compound;
+                    } break;
+                    default: {
+                        throw InvalidTokenException(it, "Expected literal or \"{\" for value");
+                    } break;
+                }
+            } break;
+            case Stage::Compound: {
+                switch (type) {
+                    case Token::Type::OpenBracket: {
+                        return Array(tokens, it);
+                    } break;
+                    case Token::Type::CloseBracket: {
+                        return Object(tokens, it);
+                    } break;
+                    case Token::Type::Literal: {
+                        stage = Stage::CompoundLiteral;
+                        compoundFirstTokenIterator = it;
+                    } break;
+                    default: {
+                        throw InvalidTokenException(it, "Expected literal, \"{\", or \"}\" after \"{\"");
+                    } break;
+                }
+            } break;
+            case Stage::CompoundLiteral: {
+                switch (type) {
+                    case Token::Type::Assignment: {
+                        it = compoundFirstTokenIterator;
+                        return Object(tokens, it);
+                    } break;
+                    case Token::Type::OpenBracket:
+                    case Token::Type::CloseBracket:
+                    case Token::Type::Literal: {
+                        it = compoundFirstTokenIterator;
+                        return Array(tokens, it);
+                    } break;
+                    default: {
+                        throw InvalidTokenException(it, "Expected \"=\", literal, \"{\", or \"}\" after literal");
+                    } break;
+                }
+            } break;
+            default: {
+                throw InvalidTokenException(it, "Unknown value error");
+            } break;
+        }
+    }
+    throw InvalidTokenException(it, "Unknown value error");
+}
+
+Value::Value(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin) : variant{Variant(tokens, begin)} {}
+
+std::string Value::Code(std::string_view frontAppend) const {
     std::stringstream stream;
-    auto& type = value.type();
-    if (type == typeid(std::string)) {
-        stream << StringToStringLiteral(std::any_cast<const std::string&>(value));
-    } else if (type == typeid(Object)) {
-        stream << "{\n" << std::any_cast<const Object&>(value).Code(std::string(frontAppend.size() + 1, '\t')) << frontAppend << "}";
-    } else if (type == typeid(Array)) {
-        stream << "{ " << std::any_cast<const Array&>(value).Code(frontAppend) << "}";
+    if (CanCast<std::string>()) {
+        stream << StringToCode(Cast<std::string>());
+    } else if (CanCast<Object>()) {
+        stream << "{\n" << Cast<Object>().Code(std::string(frontAppend.size() + 1, '\t')) << frontAppend << "}";
+    } else if (CanCast<Array>()) {
+        stream << "{ " << Cast<Array>().Code(frontAppend) << "}";
     } else {
         stream << "UNDEFINED";
     }
@@ -137,82 +207,14 @@ Object::Object(const std::vector<Token>& tokens, std::vector<Token>::const_itera
     Parse(tokens, begin);
 }
 
-#define HANDLE_COMPOUND(values) \
-case Stage::Compound: { \
-    auto type = it->TokenType(); \
-    switch (type) { \
-        case Token::Type::Literal: { \
-            stage = Stage::CompoundLiteral; \
-            compoundFirstTokenIterator = it; \
-            \
-            auto nextIterator = it; \
-            nextIterator++; \
-            if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) { \
-                stage = Stage::None; \
-                values.push_back(Array(tokens, it)); \
-            } \
-        } break; \
-        case Token::Type::OpenBracket: { \
-            stage = Stage::None; \
-            values.push_back(Array(tokens, it)); \
-        } break; \
-        default: { \
-            throw InvalidTokenException(it, "Expected literal, \"}\", or \"{\" after \"{\""); \
-        } break; \
-    } \
-} break; \
-case Stage::CompoundLiteral: { \
-    auto type = it->TokenType(); \
-    switch (type) { \
-        case Token::Type::CloseBracket: \
-        case Token::Type::Literal: { \
-            stage = Stage::None; \
-            it = compoundFirstTokenIterator; \
-            values.push_back(Array(tokens, it)); \
-        } break; \
-        case Token::Type::Assignment: { \
-            stage = Stage::None; \
-            it = compoundFirstTokenIterator; \
-            values.push_back(Object(tokens, it)); \
-        } break; \
-        default: { \
-            throw InvalidTokenException(it, "Expected literal, end, or \"=\" after literal"); \
-        } break; \
-    } \
-} break; \
-
-#define HANDLE_ASSIGNMENT(values) \
-switch (it->TokenType()) { \
-    case Token::Type::Literal: { \
-        stage = Stage::None; \
-        values.push_back(std::string(it->Literal())); \
-    } break; \
-    case Token::Type::OpenBracket: { \
-        stage = Stage::Compound; \
-        auto nextIterator = it; \
-        nextIterator++; \
-        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) { \
-            stage = Stage::None; \
-            it++; \
-            values.push_back(Object(tokens, it)); \
-        } \
-    } break; \
-    default: { \
-        throw InvalidTokenException(it, "Expected literal or \"{\" after \"=\""); \
-    } break; \
-} \
-
 void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
     enum class Stage {
         None,
         Identifier,
         Assignment,
-        Value,
-        Compound,
-        CompoundLiteral
+        Value
     };
     std::string_view key;
-    auto compoundFirstTokenIterator = it;
     Stage stage = Stage::None;
     for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
         // std::cout << "object: " << it->String() << ", stage: " << (int)stage << "\n";
@@ -233,9 +235,9 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                 }
             } break;
             case Stage::Assignment: {
-                HANDLE_ASSIGNMENT(AllAt(std::string(key)))
+                stage = Stage::None;
+                AllAt(std::string(key)).push_back(Value(tokens, it));
             } break;
-            HANDLE_COMPOUND(AllAt(std::string(key)))
             default: {
                 throw InvalidTokenException(it, "Unknown object error");
             } break;
@@ -251,22 +253,22 @@ std::vector<std::string> Object::Keys() const {
     return keys;
 }
 
-std::vector<std::any>& Object::AllAt(std::string key) {
+std::vector<Value>& Object::AllAt(std::string key) {
     if (!map.count(key)) {
-        map[key] = std::vector<std::any>();
+        map[key] = std::vector<Value>();
     }
     return map[key];
 }
 
-const std::vector<std::any>& Object::AllAt(std::string key) const {
+const std::vector<Value>& Object::AllAt(std::string key) const {
     return map.at(key);
 }
 
-std::any& Object::At(std::string key) {
+Value& Object::At(std::string key) {
     return map.at(key).at(0);
 }
 
-const std::any& Object::At(std::string key) const {
+const Value& Object::At(std::string key) const {
     return map.at(key).at(0);
 }
 
@@ -275,7 +277,7 @@ std::string Object::Code(std::string_view frontAppend) const {
     for (auto& key : Keys()) {
         for (auto& value : AllAt(key)) {
             stream << frontAppend << key << " = ";
-            stream << ValueToString(value, frontAppend);
+            stream << value.Code(frontAppend);
             stream << "\n";
         }
     }
@@ -283,40 +285,24 @@ std::string Object::Code(std::string_view frontAppend) const {
 }
 
 Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
-    enum class Stage {
-        None,
-        Compound,
-        CompoundLiteral
-    };
-    auto compoundFirstTokenIterator = it;
-    Stage stage = Stage::None;
-
     for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
         // std::cout << "array: " << it->String() << ", stage: " << (int)stage << "\n";
-        switch (stage) {
-            case Stage::None: {
-                HANDLE_ASSIGNMENT(Values())
-            } break;
-            HANDLE_COMPOUND(Values())
-            default: {
-                throw InvalidTokenException(it, "Unknown array error");
-            } break;
-        }
+        Values().push_back(Value(tokens, it));
     }
 }
 
-std::vector<std::any>& Array::Values() {
+std::vector<Value>& Array::Values() {
     return vector;
 }
             
-const std::vector<std::any>& Array::Values() const {
+const std::vector<Value>& Array::Values() const {
     return vector;
 }
             
 std::string Array::Code(std::string_view frontAppend) const {
     std::stringstream stream;
     for (auto& value : Values()) {
-        stream << ValueToString(value, frontAppend);
+        stream << value.Code(frontAppend);
         stream << " ";
     }
     return stream.str();

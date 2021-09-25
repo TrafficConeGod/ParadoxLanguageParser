@@ -10,7 +10,7 @@ class Party {
         Party(ParadoxLanguage::Object& vObject) : object{vObject} {}
 
         std::string& Name() {
-            return std::any_cast<std::string&>(object.At("name"));
+            return object.At("name").Cast<std::string>();
         }
 };
 
@@ -21,14 +21,14 @@ class Country {
         Country(std::string_view code) : object{std::string(code)} {}
 
         std::string& GraphicalCulture() {
-            return std::any_cast<std::string&>(object.At("graphical_culture"));
+            return object.At("graphical_culture").Cast<std::string>();
         }
 
         std::vector<Party> Parties() {
             std::vector<Party> parties;
             auto& partyObjects = object.AllAt("party");
             for (auto& partyObject : partyObjects) {
-                parties.push_back(std::any_cast<ParadoxLanguage::Object&>(partyObject));
+                parties.push_back(partyObject.Cast<ParadoxLanguage::Object>());
             }
             return parties;
         }

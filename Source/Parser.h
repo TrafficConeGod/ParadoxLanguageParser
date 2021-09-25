@@ -2,20 +2,20 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <any>
+#include <variant>
 #include <memory>
 #include <exception>
 #include "Token.h"
 
 namespace ParadoxLanguage {
 
-    std::string StringToStringLiteral(std::string string);
+    class Value;
 
-    std::string ValueToString(const std::any& value, std::string_view frontAppend);
+    std::string StringToCode(std::string string);
 
     class Object {
         private:
-            std::map<std::string, std::vector<std::any>> map;
+            std::map<std::string, std::vector<Value>> map;
 
             void Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
         public:
@@ -25,26 +25,43 @@ namespace ParadoxLanguage {
 
             std::vector<std::string> Keys() const;
 
-            std::vector<std::any>& AllAt(std::string key);
-            const std::vector<std::any>& AllAt(std::string key) const;
+            std::vector<Value>& AllAt(std::string key);
+            const std::vector<Value>& AllAt(std::string key) const;
 
-            std::any& At(std::string key);
-            const std::any& At(std::string key) const;
+            Value& At(std::string key);
+            const Value& At(std::string key) const;
 
             std::string Code(std::string_view frontAppend = "") const;
     };
 
     class Array {
         private:
-            std::vector<std::any> vector;
+            std::vector<Value> vector;
         public:
             Array();
             Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
 
-            std::vector<std::any>& Values();
-            const std::vector<std::any>& Values() const;
+            std::vector<Value>& Values();
+            const std::vector<Value>& Values() const;
 
             std::string Code(std::string_view frontAppend = "") const;
+    };
+
+    class Value {
+        private:
+            std::variant<std::string, Object, Array> variant;
+
+            std::variant<std::string, Object, Array> Variant(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
+        public:
+            Value(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
+            std::string Code(std::string_view frontAppend = "") const;
+
+            template<typename T>
+            bool CanCast() const { return std::holds_alternative<T>(variant); }
+            template<typename T>
+            const T& Cast() const { return std::get<T>(variant); }
+            template<typename T>
+            T& Cast() { return std::get<T>(variant); }
     };
 
     class InvalidTokenException : public std::exception {

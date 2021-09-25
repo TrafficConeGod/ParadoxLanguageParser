@@ -10,7 +10,7 @@ int main() {
 
     std::string code = object.Code();
 
-    std::ofstream("SaveGameExampleReconstructed.o").write(code.c_str(), code.size());
+    std::ofstream("SaveGameExampleReconstructed.out").write(code.c_str(), code.size());
 
     return 0;
 }
