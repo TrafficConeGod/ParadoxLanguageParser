@@ -1,5 +1,5 @@
 #pragma once
-#include <map>
+#include <fifo_map.hpp>
 #include <vector>
 #include "Token.h"
 
@@ -11,7 +11,7 @@ namespace ParadoxLanguage {
 
     class Object {
         private:
-            std::map<std::string, std::vector<Value>> map;
+            nlohmann::fifo_map<std::string, std::vector<Value>> map;
 
             void Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
         public:
