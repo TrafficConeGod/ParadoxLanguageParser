@@ -10,6 +10,9 @@ namespace ParadoxLanguage {
 
             std::variant<std::string, Object, Array> Variant(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
         public:
+            template<typename T>
+            Value(const T& val) : variant{val} {}
+            
             Value(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin);
             std::string Code(std::string_view frontAppend = "") const;
 

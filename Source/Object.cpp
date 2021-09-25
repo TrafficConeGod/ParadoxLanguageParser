@@ -170,8 +170,12 @@ std::vector<std::string> Object::Keys() const {
     return keys;
 }
 
+bool Object::HasAt(std::string key) const {
+    return map.count(key);
+}
+
 std::vector<Value>& Object::AllAt(std::string key) {
-    if (!map.count(key)) {
+    if (!HasAt(key)) {
         map[key] = std::vector<Value>();
     }
     return map[key];
@@ -182,11 +186,15 @@ const std::vector<Value>& Object::AllAt(std::string key) const {
 }
 
 Value& Object::At(std::string key) {
-    return map.at(key).at(0);
+    auto& values = AllAt(key);
+    if (values.size() == 0) {
+        values.push_back(std::string());
+    }
+    return values[0];
 }
 
 const Value& Object::At(std::string key) const {
-    return map.at(key).at(0);
+    return AllAt(key).at(0);
 }
 
 std::string Object::Code(std::string_view frontAppend) const {

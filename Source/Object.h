@@ -21,6 +21,8 @@ namespace ParadoxLanguage {
 
             std::vector<std::string> Keys() const;
 
+            bool HasAt(std::string key) const;
+
             std::vector<Value>& AllAt(std::string key);
             const std::vector<Value>& AllAt(std::string key) const;
 
