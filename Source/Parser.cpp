@@ -54,12 +54,6 @@ Object::Object(std::string code) {
     bool wasKeyCharacter = false;
     code += "\n";
     for (char ch : code) {
-        if (ch == '\n') {
-            tokenPosition.column = 0;
-            tokenPosition.row++;
-        } else {
-            tokenPosition.column++;
-        }
         if (ch == '#') {
             isInComment = true;
         }
@@ -122,10 +116,16 @@ Object::Object(std::string code) {
                 }
             }
         }
+        if (ch == '\n') {
+            tokenPosition.column = 1;
+            tokenPosition.row++;
+        } else {
+            tokenPosition.column++;
+        }
     }
 
     // for (const auto& token : tokens) {
-    //     std::cout << token.Literal() << " " << (int)token.TokenType() << "\n";
+    //     std::cout << token.String() << "\n";
     // }
     // std::cout << tokens.size() << "\n";
 
@@ -136,6 +136,71 @@ Object::Object(std::string code) {
 Object::Object(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& begin) {
     Parse(tokens, begin);
 }
+
+#define HANDLE_COMPOUND(values) \
+case Stage::Compound: { \
+    auto type = it->TokenType(); \
+    switch (type) { \
+        case Token::Type::Literal: { \
+            stage = Stage::CompoundLiteral; \
+            compoundFirstTokenIterator = it; \
+            \
+            auto nextIterator = it; \
+            nextIterator++; \
+            if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) { \
+                stage = Stage::None; \
+                values.push_back(Array(tokens, it)); \
+            } \
+        } break; \
+        case Token::Type::OpenBracket: { \
+            stage = Stage::None; \
+            values.push_back(Array(tokens, it)); \
+        } break; \
+        default: { \
+            throw InvalidTokenException(it, "Expected literal, \"}\", or \"{\" after \"{\""); \
+        } break; \
+    } \
+} break; \
+case Stage::CompoundLiteral: { \
+    auto type = it->TokenType(); \
+    switch (type) { \
+        case Token::Type::CloseBracket: \
+        case Token::Type::Literal: { \
+            stage = Stage::None; \
+            it = compoundFirstTokenIterator; \
+            values.push_back(Array(tokens, it)); \
+        } break; \
+        case Token::Type::Assignment: { \
+            stage = Stage::None; \
+            it = compoundFirstTokenIterator; \
+            values.push_back(Object(tokens, it)); \
+        } break; \
+        default: { \
+            throw InvalidTokenException(it, "Expected literal, end, or \"=\" after literal"); \
+        } break; \
+    } \
+} break; \
+
+#define HANDLE_ASSIGNMENT(values) \
+switch (it->TokenType()) { \
+    case Token::Type::Literal: { \
+        stage = Stage::None; \
+        values.push_back(std::string(it->Literal())); \
+    } break; \
+    case Token::Type::OpenBracket: { \
+        stage = Stage::Compound; \
+        auto nextIterator = it; \
+        nextIterator++; \
+        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) { \
+            stage = Stage::None; \
+            it++; \
+            values.push_back(Object(tokens, it)); \
+        } \
+    } break; \
+    default: { \
+        throw InvalidTokenException(it, "Expected literal or \"{\" after \"=\""); \
+    } break; \
+} \
 
 void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_iterator& it) {
     enum class Stage {
@@ -150,6 +215,7 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
     auto compoundFirstTokenIterator = it;
     Stage stage = Stage::None;
     for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
+        // std::cout << "object: " << it->String() << ", stage: " << (int)stage << "\n";
         switch (stage) {
             case Stage::None: {
                 if (it->TokenType() == Token::Type::Literal) {
@@ -167,64 +233,9 @@ void Object::Parse(const std::vector<Token>& tokens, std::vector<Token>::const_i
                 }
             } break;
             case Stage::Assignment: {
-                auto type = it->TokenType();
-                switch (type) {
-                    case Token::Type::Literal: {
-                        stage = Stage::None;
-                        AllAt(std::string(key)).push_back(std::string(it->Literal()));
-                    } break;
-                    case Token::Type::OpenBracket: {
-                        stage = Stage::Compound;
-                        auto nextIterator = it;
-                        nextIterator++;
-                        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
-                            stage = Stage::None;
-                            AllAt(std::string(key)).push_back(Object(tokens, it));
-                        }
-                    } break;
-                    default: {
-                        throw InvalidTokenException(it, "Expected literal or \"{\" after \"=\"");
-                    } break;
-                }
+                HANDLE_ASSIGNMENT(AllAt(std::string(key)))
             } break;
-            case Stage::Compound: {
-                auto type = it->TokenType();
-                switch (type) {
-                    case Token::Type::Literal: {
-                        stage = Stage::CompoundLiteral;
-                        compoundFirstTokenIterator = it;
-
-                        auto nextIterator = it;
-                        nextIterator++;
-                        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
-                            stage = Stage::None;
-                            AllAt(std::string(key)).push_back(Array(tokens, it));
-                        }
-                    } break;
-                    default: {
-                        throw InvalidTokenException(it, "Expected literal or end after \"{\"");
-                    } break;
-                }
-            } break;
-            case Stage::CompoundLiteral: {
-                auto type = it->TokenType();
-                switch (type) {
-                    case Token::Type::CloseBracket:
-                    case Token::Type::Literal: {
-                        stage = Stage::None;
-                        it = compoundFirstTokenIterator;
-                        AllAt(std::string(key)).push_back(Array(tokens, it));
-                    } break;
-                    case Token::Type::Assignment: {
-                        stage = Stage::None;
-                        it = compoundFirstTokenIterator;
-                        AllAt(std::string(key)).push_back(Object(tokens, it));
-                    } break;
-                    default: {
-                        throw InvalidTokenException(it, "Expected literal, end, or \"=\" after literal");
-                    } break;
-                }
-            } break;
+            HANDLE_COMPOUND(AllAt(std::string(key)))
             default: {
                 throw InvalidTokenException(it, "Unknown object error");
             } break;
@@ -281,59 +292,12 @@ Array::Array(const std::vector<Token>& tokens, std::vector<Token>::const_iterato
     Stage stage = Stage::None;
 
     for (; it != tokens.end() && it->TokenType() != Token::Type::CloseBracket; it++) {
+        // std::cout << "array: " << it->String() << ", stage: " << (int)stage << "\n";
         switch (stage) {
             case Stage::None: {
-                switch (it->TokenType()) {
-                    case Token::Type::Literal: {
-                        Values().push_back(std::string(it->Literal()));
-                    } break;
-                    case Token::Type::OpenBracket: {
-                        stage = Stage::Compound;
-                    } break;
-                    default: {
-                        throw InvalidTokenException(it, "Expected literal or \"{\"");
-                    } break;
-                }
+                HANDLE_ASSIGNMENT(Values())
             } break;
-            case Stage::Compound: {
-                auto type = it->TokenType();
-                switch (type) {
-                    case Token::Type::OpenBracket:
-                    case Token::Type::Literal: {
-                        stage = Stage::CompoundLiteral;
-                        compoundFirstTokenIterator = it;
-
-                        auto nextIterator = it;
-                        nextIterator++;
-                        if (nextIterator == tokens.end() || nextIterator->TokenType() == Token::Type::CloseBracket) {
-                            stage = Stage::None;
-                            Values().push_back(Array(tokens, it));
-                        }
-                    } break;
-                    default: {
-                        throw InvalidTokenException(it, "Expected literal or \"{\" after \"{\"");
-                    } break;
-                }
-            } break;
-            case Stage::CompoundLiteral: {
-                auto type = it->TokenType();
-                switch (type) {
-                    case Token::Type::CloseBracket:
-                    case Token::Type::Literal: {
-                        stage = Stage::None;
-                        it = compoundFirstTokenIterator;
-                        Values().push_back(Array(tokens, it));
-                    } break;
-                    case Token::Type::Assignment: {
-                        stage = Stage::None;
-                        it = compoundFirstTokenIterator;
-                        Values().push_back(Object(tokens, it));
-                    } break;
-                    default: {
-                        throw InvalidTokenException(it, "Expected literal, end, or \"=\" after literal");
-                    } break;
-                }
-            } break;
+            HANDLE_COMPOUND(Values())
             default: {
                 throw InvalidTokenException(it, "Unknown array error");
             } break;

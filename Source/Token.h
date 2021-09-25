@@ -14,7 +14,7 @@ namespace ParadoxLanguage {
 
             struct Position {
                 uint row = 1;
-                uint column = 0;
+                uint column = 1;
             };
         private:
             Type type = Type::Invalid;
@@ -26,5 +26,6 @@ namespace ParadoxLanguage {
             Type TokenType() const;
             const Position& TokenPosition() const;
             std::string_view Literal() const;
+            std::string String() const;
     };
 }

@@ -1,4 +1,5 @@
 #include "Token.h"
+#include <sstream>
 
 using namespace ParadoxLanguage;
 
@@ -29,4 +30,10 @@ const Token::Position& Token::TokenPosition() const {
 
 std::string_view Token::Literal() const {
     return literal;
+}
+
+std::string Token::String() const {
+    std::stringstream stream;
+    stream << "literal: " << Literal() << ", type: " << (int)TokenType() << ", row: " << TokenPosition().row << ", column: " << TokenPosition().column;
+    return stream.str();
 }
