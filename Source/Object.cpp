@@ -33,67 +33,103 @@ Object::Object() {}
 Object::Object(std::string code) {
     // split into tokens
     std::vector<Token> tokens;
-    std::stringstream stream;
+    std::stringstream tokenBuilder;
 
     Token::Position tokenPosition;
-    bool isInQuote = false;
-    bool isInComment = false;
+    bool inComment = false;
+
+
     code += "\n";
+
+    auto Tokenize = [tokenPosition](std::vector<Token>& tokens, std::stringstream& tokenBuilder) {
+        std::string literal = tokenBuilder.str();
+        if (literal.size() > 0) {
+            tokens.push_back(Token(std::string(literal), tokenPosition));
+            tokenBuilder.str(std::string());
+        }
+    };
+
+    enum class Mode {
+        Literal,
+        Symbol,
+        String
+    };
+
+    Mode mode = Mode::Literal;
+
     for (char ch : code) {
         if (ch == '#') {
-            isInComment = true;
+            inComment = true;
         }
-        if (isInComment) {
+        if (inComment) {
             if (ch == '\n') {
-                isInComment = false;
+                inComment = false;
             }
         } else {
-            if (isInQuote) {
-                if (ch == '"') {
-                    isInQuote = false;
-                    std::string literal = stream.str();
-                    if (literal.size() > 0) {
-                        tokens.push_back(Token(literal, tokenPosition));
-                        stream.str(std::string());
+            
+            switch (mode) {
+                case Mode::Literal: {
+                    switch (ch) {
+                        case '"': {
+                            mode = Mode::String;
+                            Tokenize(tokens, tokenBuilder);
+                        } break;
+                        case 0xD: // carriage return moment
+                        case ' ':
+                        case '\n':
+                        case '\t': {
+                            Tokenize(tokens, tokenBuilder);
+                        } break;
+                        case '=':
+                        case '{':
+                        case '}': {
+                            mode = Mode::Symbol;
+                            Tokenize(tokens, tokenBuilder);
+                        } // flows down
+                        default: {
+                            tokenBuilder << ch;
+                        } break;
                     }
-                } else {
-                    stream << ch;
-                }
-            } else {
-                switch (ch) {
-                    case '=':
-                    case '{':
-                    case '}':
-                    case '\n':
-                    case 0xD:
-                    case ' ':
-                    case '\t': {
-                        if (!isInQuote) {
-                            std::string literal = stream.str();
-                            if (literal.size() > 0) {
-                                tokens.push_back(Token(literal, tokenPosition));
-                                stream.str(std::string());
-                            }
-                        }
-                    } break;
-                    case '"': {
-                        isInQuote = true;
-                    } break;
-                    default: {
-                        stream << ch;
-                    } break;
-                }
-                switch (ch) {
-                    case '=':
-                    case '{':
-                    case '}': {
-                        tokens.push_back(Token(std::string(1, ch), tokenPosition));
-                    } break;
-                    default: {
-
-                    } break;
-                }
+                } break;
+                case Mode::Symbol: {
+                    switch (ch) {
+                        case '"': {
+                            mode = Mode::String;
+                            Tokenize(tokens, tokenBuilder);
+                        } break;
+                        case 0xD: // carriage return 2
+                        case ' ':
+                        case '\n':
+                        case '\t': {
+                            mode = Mode::Literal;
+                            Tokenize(tokens, tokenBuilder);
+                        } break;
+                        case '=':
+                        case '{':
+                        case '}': {
+                            tokenBuilder << ch;
+                        } // if this does flow down then you can't get multi-character symbol tokens (like ==, {{ etc), however in this case we don't want that so it does flow down
+                        default: {
+                            mode = Mode::Literal;
+                            Tokenize(tokens, tokenBuilder);
+                            tokenBuilder << ch;
+                        } break;
+                    }
+                } break;
+                case Mode::String: {
+                    switch (ch) {
+                        case '"': {
+                            mode = Mode::Literal;
+                            Tokenize(tokens, tokenBuilder);
+                        } break;
+                        default: {
+                            tokenBuilder << ch;
+                        } break;
+                    }
+                } break;
+                default: break;
             }
+
         }
         if (ch == '\n') {
             tokenPosition.column = 1;
