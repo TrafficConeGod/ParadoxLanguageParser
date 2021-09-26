@@ -38,7 +38,6 @@ Object::Object(std::string code) {
     Token::Position tokenPosition;
     bool isInQuote = false;
     bool isInComment = false;
-    bool wasKeyCharacter = false;
     code += "\n";
     for (char ch : code) {
         if (ch == '#') {
@@ -49,12 +48,6 @@ Object::Object(std::string code) {
                 isInComment = false;
             }
         } else {
-            if (wasKeyCharacter) {
-                wasKeyCharacter = false;
-                tokens.push_back(Token(stream.str(), tokenPosition));
-                stream.str(std::string());
-            }
-            
             if (isInQuote) {
                 if (ch == '"') {
                     isInQuote = false;
@@ -94,8 +87,7 @@ Object::Object(std::string code) {
                     case '=':
                     case '{':
                     case '}': {
-                        wasKeyCharacter = true;
-                        stream << ch;
+                        tokens.push_back(Token(std::string(1, ch), tokenPosition));
                     } break;
                     default: {
 
