@@ -53,7 +53,7 @@ Object::Object(std::string code) {
                     isInQuote = false;
                     std::string literal = stream.str();
                     if (literal.size() > 0) {
-                        tokens.push_back(Token(stream.str(), tokenPosition));
+                        tokens.push_back(Token(literal, tokenPosition));
                         stream.str(std::string());
                     }
                 } else {
@@ -71,7 +71,7 @@ Object::Object(std::string code) {
                         if (!isInQuote) {
                             std::string literal = stream.str();
                             if (literal.size() > 0) {
-                                tokens.push_back(Token(stream.str(), tokenPosition));
+                                tokens.push_back(Token(literal, tokenPosition));
                                 stream.str(std::string());
                             }
                         }
